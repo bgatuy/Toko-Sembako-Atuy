@@ -173,15 +173,18 @@ function addToCart(product, unitType = 'base') {
   const isMedium = unitType === 'medium'
   
   let price = product.price
+  let capitalPrice = product.capitalPrice
   let conversion = 1
   let unitName = product.unit || 'Pcs'
 
   if (isBig) {
     price = product.priceBig || (product.price * (product.conversion || 1))
+    capitalPrice = product.capitalPriceBig || (product.capitalPrice * (product.conversion || 1))
     conversion = product.conversion || 1
     unitName = product.unitBig || 'Grosir'
   } else if (isMedium) {
     price = product.priceMedium || (product.price * (product.conversionMedium || 1))
+    capitalPrice = product.capitalPriceMedium || (product.capitalPrice * (product.conversionMedium || 1))
     conversion = product.conversionMedium || 1
     unitName = product.unitMedium || 'Sedang'
   }
@@ -211,6 +214,7 @@ function addToCart(product, unitType = 'base') {
       cartKey: cartKey, // Simpan key unik
       name: displayName, // Nama tampilan beda
       price: price,      // Harga beda
+      capitalPrice: capitalPrice, // Simpan HPP sesuai satuan
       qty: 0, 
       conversion: conversion, // Simpan faktor pengali stok
       unitType: unitType
@@ -488,7 +492,7 @@ function processCheckout() {
     name: i.name,
     qty: i.qty,
     price: i.price,
-    capitalPrice: (i.capitalPrice || 0) * (i.conversion || 1), // Fix: Modal dikali konversi (isi)
+    capitalPrice: i.capitalPrice || 0,
     total: i.price * i.qty
   }))
   
@@ -1045,6 +1049,7 @@ function openProductModal(id = null) {
     priceMediumInput.value = ''
     capitalPriceMediumInput.value = ''
     document.getElementById('wholesalePriceInfo').classList.add('hidden')
+    document.getElementById('wholesalePriceInfoMedium').classList.add('hidden')
     
     wholesaleGroup.classList.add('hidden')
     wholesaleChevron.classList.remove('rotate-180')
@@ -1208,59 +1213,107 @@ renderCart()
 
 // Logic Sinkronisasi Harga Modal (Eceran <-> Grosir)
 const elCapBase = document.getElementById('prodCapitalPrice')
+const elCapMedium = document.getElementById('prodCapitalPriceMedium')
+const elConvMedium = document.getElementById('prodConversionMedium')
 const elCapBig = document.getElementById('prodCapitalPriceBig')
-const elConv = document.getElementById('prodConversion')
+const elConvBig = document.getElementById('prodConversion')
 
 function syncCapitalPrice(source) {
   const base = getNumber(elCapBase.value)
+  const medium = getNumber(elCapMedium.value)
   const big = getNumber(elCapBig.value)
-  const conv = Number(elConv.value) || 1
+  const convMedium = Number(elConvMedium.value) || 1
+  const convBig = Number(elConvBig.value) || 1
 
   if (source === 'base') {
-    // Jika ubah modal eceran -> update modal grosir
-    elCapBig.value = formatNumber(base * conv)
-  } else if (source === 'big') {
-    // Jika ubah modal grosir -> update modal eceran (pembulatan ke atas)
-    if (conv > 0) elCapBase.value = formatNumber(Math.ceil(big / conv))
-  } else if (source === 'conv') {
-    // Jika ubah konversi -> update modal grosir (asumsi modal eceran tetap)
-    elCapBig.value = formatNumber(base * conv)
+    // Ubah Eceran -> Update Menengah & Besar
+    elCapMedium.value = formatNumber(base * convMedium)
+    elCapBig.value = formatNumber(base * convBig)
+  } 
+  else if (source === 'medium') {
+    // Reverse sync dimatikan agar Anda bisa input HPP Menengah manual (misal lebih murah)
+    // tanpa mengubah HPP Eceran secara otomatis.
+  }
+  else if (source === 'big') {
+    // Reverse sync dimatikan agar Anda bisa input HPP Besar manual.
+  }
+  else if (source === 'convMedium') {
+    // Ubah Konversi Menengah -> Update Harga Menengah
+    elCapMedium.value = formatNumber(base * convMedium)
+  }
+  else if (source === 'convBig') {
+    // Ubah Konversi Besar -> Update Harga Besar
+    elCapBig.value = formatNumber(base * convBig)
+  }
+}
+
+// Logic Sinkronisasi Harga Jual (Otomatis isi jika kosong saat konversi diinput)
+const elPriceBase = document.getElementById('prodPrice')
+const elPriceMedium = document.getElementById('prodPriceMedium')
+const elPriceBig = document.getElementById('prodPriceBig')
+
+function syncSellingPrice(source) {
+  const base = getNumber(elPriceBase.value)
+  const convMedium = Number(elConvMedium.value) || 1
+  const convBig = Number(elConvBig.value) || 1
+
+  if (source === 'convMedium') {
+    // Update otomatis saat konversi berubah
+    elPriceMedium.value = formatNumber(base * convMedium)
+  } else if (source === 'convBig') {
+    // Update otomatis saat konversi berubah
+    elPriceBig.value = formatNumber(base * convBig)
   }
 }
 
 elCapBase.addEventListener('input', () => syncCapitalPrice('base'))
+elCapMedium.addEventListener('input', () => syncCapitalPrice('medium'))
 elCapBig.addEventListener('input', () => syncCapitalPrice('big'))
-elConv.addEventListener('input', () => syncCapitalPrice('conv'))
+
+// Event Listener untuk Konversi (Trigger HPP, Harga Jual, dan Info)
+elConvMedium.addEventListener('input', () => {
+  syncCapitalPrice('convMedium')
+  syncSellingPrice('convMedium')
+  updateWholesaleInfo()
+})
+elConvBig.addEventListener('input', () => {
+  syncCapitalPrice('convBig')
+  syncSellingPrice('convBig')
+  updateWholesaleInfo()
+})
 
 // Logic Info Selisih Harga Jual (Eceran vs Grosir)
 function updateWholesaleInfo() {
-  const price = getNumber(document.getElementById('prodPrice').value)
-  const conv = Number(document.getElementById('prodConversion').value)
-  const priceBig = getNumber(document.getElementById('prodPriceBig').value)
-  const infoEl = document.getElementById('wholesalePriceInfo')
+  const price = getNumber(elPriceBase.value)
   
-  if (price > 0 && conv > 1 && priceBig > 0) {
-    const normalTotal = price * conv
-    const diff = normalTotal - priceBig
+  // Helper untuk update info
+  const updateInfo = (convEl, priceEl, infoElId) => {
+    const conv = Number(convEl.value)
+    const pVal = getNumber(priceEl.value)
+    const infoEl = document.getElementById(infoElId)
     
-    if (diff > 0) {
-      infoEl.innerHTML = `✅ Lebih hemat <b>${rupiah(diff)}</b> dibanding eceran`
-      infoEl.className = 'text-[10px] text-green-600 mt-1'
-      infoEl.classList.remove('hidden')
-    } else if (diff < 0) {
-      infoEl.innerHTML = `⚠️ Lebih mahal <b>${rupiah(Math.abs(diff))}</b> dibanding eceran`
-      infoEl.className = 'text-[10px] text-orange-500 mt-1'
-      infoEl.classList.remove('hidden')
-    } else {
-      infoEl.classList.add('hidden')
-    }
-  } else {
-    infoEl.classList.add('hidden')
+    if (price > 0 && conv > 1 && pVal > 0) {
+      const normal = price * conv
+      const diff = normal - pVal
+      if (diff > 0) {
+        infoEl.innerHTML = `✅ Lebih hemat <b>${rupiah(diff)}</b> dibanding eceran`
+        infoEl.className = 'text-[10px] text-green-600 mt-1'
+        infoEl.classList.remove('hidden')
+      } else if (diff < 0) {
+        infoEl.innerHTML = `⚠️ Lebih mahal <b>${rupiah(Math.abs(diff))}</b> dibanding eceran`
+        infoEl.className = 'text-[10px] text-orange-500 mt-1'
+        infoEl.classList.remove('hidden')
+      } else infoEl.classList.add('hidden')
+    } else infoEl.classList.add('hidden')
   }
+
+  updateInfo(elConvMedium, elPriceMedium, 'wholesalePriceInfoMedium')
+  updateInfo(elConvBig, elPriceBig, 'wholesalePriceInfo')
 }
-document.getElementById('prodPrice').addEventListener('input', updateWholesaleInfo)
-document.getElementById('prodConversion').addEventListener('input', updateWholesaleInfo)
-document.getElementById('prodPriceBig').addEventListener('input', updateWholesaleInfo)
+
+elPriceBase.addEventListener('input', updateWholesaleInfo)
+elPriceMedium.addEventListener('input', updateWholesaleInfo)
+elPriceBig.addEventListener('input', updateWholesaleInfo)
 
 /* CUSTOM CONFIRM MODAL */
 let pendingConfirmAction = null
