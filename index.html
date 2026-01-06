@@ -70,7 +70,7 @@
       <div class="sticky top-0 z-10 bg-gray-100 pb-1">
         <div class="bg-white rounded-xl shadow-soft px-4 py-3 flex items-center gap-3 mb-4">
           <i data-lucide="search" class="text-primary"></i>
-          <input id="search" placeholder="Cari menu ..." class="flex-1 outline-none text-gray-500" />
+          <input id="search" placeholder="Cari produk ..." class="flex-1 outline-none text-gray-500" />
         </div>
 
         <!-- Filter Kategori -->
@@ -83,7 +83,7 @@
     <!-- Cart -->
     <aside class="w-96 bg-white rounded-2xl shadow-soft p-4 flex flex-col">
       <div class="flex justify-between items-center mb-4">
-        <div class="font-semibold">Order</div>
+        <div class="font-semibold">Pesanan</div>
         <div id="cartCount"
           class="w-6 h-6 bg-primary text-white rounded-full text-xs flex items-center justify-center">0</div>
       </div>
@@ -119,7 +119,7 @@
 
         <!-- Input Cash (Hanya muncul jika Tunai) -->
         <div id="cashSection">
-          <input id="cashInput" type="text" placeholder="Cash"
+          <input id="cashInput" type="text" placeholder="Nominal"
             class="w-full border rounded-xl px-3 py-2 outline-none" />
 
           <div class="grid grid-cols-3 gap-2 mt-2">
@@ -174,7 +174,7 @@
                 <th class="p-4 font-medium">ID</th>
                 <th class="p-4 font-medium">Nama Produk</th>
                 <th class="p-4 font-medium">Kategori</th>
-                <th class="p-4 font-medium">Harga Modal</th>
+                <th class="p-4 font-medium">Harga Pokok</th>
                 <th class="p-4 font-medium">Harga Jual</th>
                 <th class="p-4 font-medium">Stok</th>
                 <th class="p-4 font-medium text-right">Aksi</th>
@@ -288,7 +288,7 @@
             <thead class="bg-gray-50 sticky top-0">
               <tr class="text-gray-500 text-sm">
                 <th class="p-4">Waktu</th>
-                <th class="p-4">Items</th>
+                <th class="p-4">Item</th>
                 <th class="p-4 text-right">Total</th>
               </tr>
             </thead>
@@ -381,41 +381,170 @@
 
 <!-- MODAL PRODUK -->
 <div id="productModal" class="hidden z-50">
-  <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
-  <div class="bg-white w-96 rounded-2xl shadow-soft p-6">
-    <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-800">Tambah Produk</h3>
-    <input type="hidden" id="prodId">
-    <div class="space-y-4">
-      <div>
-        <label class="text-sm font-medium text-gray-700 mb-1 block">Nama Produk</label>
-        <input id="prodName" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
-      </div>
-      <div>
-        <label class="text-sm font-medium text-gray-700 mb-1 block">Kategori</label>
-        <input id="prodCategory" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Contoh: Sembako, Minuman, Snack">
-      </div>
-      <div>
-        <label class="text-sm font-medium text-gray-700 mb-1 block">Nama File Gambar</label>
-        <input id="prodImage" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="contoh: beras.jpg">
-        <p class="text-xs text-gray-400 mt-1">File harus ada di folder assets/images/</p>
-      </div>
-      <div>
-        <label class="text-sm font-medium text-gray-700 mb-1 block">Stok</label>
-        <input id="prodStock" type="number" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
-      </div>
-      <div>
-        <label class="text-sm font-medium text-gray-700 mb-1 block">Harga Modal (Rp)</label>
-        <input id="prodCapitalPrice" type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
-      </div>
-      <div>
-        <label class="text-sm font-medium text-gray-700 mb-1 block">Harga Jual (Rp)</label>
-        <input id="prodPrice" type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
-      </div>
+  <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-soft flex flex-col max-h-[90vh]">
+    
+    <!-- Header -->
+    <div class="p-6 border-b">
+      <h3 id="modalTitle" class="text-xl font-bold text-gray-800">Tambah Produk</h3>
     </div>
-    <div class="flex gap-3 mt-6">
-      <button onclick="closeProductModal()" class="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition">Batal</button>
-      <button onclick="saveProduct()" class="flex-1 bg-primary text-white py-2.5 rounded-xl font-medium hover:bg-cyan-600 transition shadow-lg shadow-cyan-500/30">Simpan</button>
+
+    <!-- Scrollable Body -->
+    <div class="p-6 overflow-y-auto space-y-5">
+      <input type="hidden" id="prodId">
+      
+      <!-- Section 1: Info Produk -->
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Informasi Produk</label>
+          <input id="prodName" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Nama Produk">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">Kategori</label>
+            <input id="prodCategory" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Kategori">
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">File Gambar</label>
+            <input id="prodImage" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="namafile.jpg">
+          </div>
+        </div>
+      </div>
+
+      <hr class="border-gray-100">
+
+      <!-- Section 2: Satuan & Harga Dasar -->
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <label class="text-xs font-bold text-gray-500 uppercase block">Satuan Dasar</label>
+          <button type="button" onclick="openUnitInfo()" class="text-xs text-primary font-medium flex items-center gap-1 hover:underline">
+            <i data-lucide="info" class="w-3 h-3"></i> Panduan Isi Satuan
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-medium text-gray-700 mb-1 block">Satuan Eceran</label>
+            <select id="prodUnit" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-gray-700">
+              <option value="">- Pilih -</option>
+              <option value="Pcs">Pcs</option>
+              <option value="Liter">Liter</option>
+              <option value="Kg">Kg</option>
+              <option value="Gram">Gram</option>
+              <option value="Karung">Karung</option>
+              <option value="Renteng">Renteng</option>
+              <option value="Sachet">Sachet</option>
+              <option value="Pak">Pak</option>
+              <option value="Dus">Dus</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-700 mb-1 block">Stok</label>
+            <input id="prodStock" type="number" step="0.01" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Total Satuan">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-700 mb-1 block">Harga Pokok (HPP)</label>
+            <input id="prodCapitalPrice" type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Rp 0">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-700 mb-1 block">Harga Jual</label>
+            <input id="prodPrice" type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Rp 0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Multi Satuan (Grosir) -->
+      <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 transition-all">
+        <button type="button" onclick="toggleWholesale()" class="w-full flex items-center justify-between outline-none group">
+          <div class="flex items-center gap-2">
+            <i data-lucide="package-plus" class="w-4 h-4 text-blue-600"></i>
+            <label class="text-xs font-bold text-blue-800 uppercase cursor-pointer group-hover:text-blue-600">Multi Satuan (Grosir)</label>
+          </div>
+          <i id="wholesaleChevron" data-lucide="chevron-down" class="w-4 h-4 text-blue-400 transition-transform duration-200"></i>
+        </button>
+        <div id="wholesaleInputGroup" class="hidden mt-3 pt-3 border-t border-blue-200">
+          <!-- Level 2: Medium -->
+          <div class="mb-4 pb-4 border-b border-blue-100">
+            <div class="text-xs font-bold text-blue-800 uppercase mb-2">Satuan Menengah</div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-xs text-gray-500 block mb-1">Satuan Menengah</label>
+                <select id="prodUnitMedium" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white text-gray-700">
+                  <option value="">- Pilih -</option>
+                  <option value="Pcs">Pcs</option>
+                  <option value="Liter">Liter</option>
+                  <option value="Kg">Kg</option>
+                  <option value="Gram">Gram</option>
+                  <option value="Karung">Karung</option>
+                  <option value="Renteng">Renteng</option>
+                  <option value="Sachet">Sachet</option>
+                  <option value="Pak">Pak</option>
+                  <option value="Dus">Dus</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 block mb-1">Isi (Total Pcs)</label>
+                <input id="prodConversionMedium" type="number" step="0.01" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" placeholder="Cth: 10">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs text-gray-500 block mb-1">HPP Menengah</label>
+                <input id="prodCapitalPriceMedium" type="text" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" placeholder="Rp">
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 block mb-1">Harga Jual Menengah</label>
+                <input id="prodPriceMedium" type="text" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" placeholder="Rp">
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 3: Big -->
+          <div>
+            <div class="text-xs font-bold text-blue-800 uppercase mb-2">Satuan Besar</div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Satuan Besar</label>
+              <select id="prodUnitBig" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white text-gray-700">
+                <option value="">- Pilih -</option>
+                <option value="Pcs">Pcs</option>
+                <option value="Liter">Liter</option>
+                <option value="Kg">Kg</option>
+                <option value="Gram">Gram</option>
+                <option value="Karung">Karung</option>
+                <option value="Renteng">Renteng</option>
+                <option value="Sachet">Sachet</option>
+                <option value="Pak">Pak</option>
+                <option value="Dus">Dus</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Isi (Total Pcs)</label>
+              <input id="prodConversion" type="number" step="0.01" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" placeholder="Cth: 40">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">HPP Besar</label>
+              <input id="prodCapitalPriceBig" type="text" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" placeholder="Rp">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Harga Jual Besar</label>
+              <input id="prodPriceBig" type="text" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white" placeholder="Rp">
+              <div id="wholesalePriceInfo" class="hidden mt-1"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+
     </div>
+
+    <!-- Footer -->
+    <div class="p-6 border-t bg-gray-50 rounded-b-2xl flex gap-3">
+      <button onclick="closeProductModal()" class="flex-1 bg-white border border-gray-200 text-gray-600 py-2.5 rounded-xl font-medium hover:bg-gray-50 transition">Batal</button>
+      <button onclick="saveProduct()" class="flex-1 bg-primary text-white py-2.5 rounded-xl font-medium hover:bg-cyan-600 transition shadow-lg shadow-cyan-500/30">Simpan Produk</button>
+    </div>
+
   </div>
   </div>
 </div>
@@ -474,7 +603,7 @@
       </div>
       <div>
         <label class="text-sm font-medium text-gray-700 mb-1 block">Jumlah</label>
-        <input id="stockAmount" type="number" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+        <input id="stockAmount" type="number" step="0.01" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
       </div>
     </div>
 
@@ -516,6 +645,120 @@
       </div>
     </div>
   </div>
+  </div>
+</div>
+
+<!-- MODAL PILIH SATUAN (POPUP SAAT KLIK PRODUK) -->
+<div id="unitSelectionModal" class="hidden z-50">
+  <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
+    <div class="bg-white w-96 rounded-3xl shadow-2xl p-6 transform scale-100 transition-transform">
+      
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+          <i data-lucide="package-check" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800">Pilih Satuan</h3>
+        <p id="unitSelectProductName" class="text-sm text-gray-500 mt-1">Nama Produk</p>
+      </div>
+      
+      <div class="space-y-3">
+        <button id="btnSelectBase" class="group w-full bg-white hover:bg-blue-50 border-2 border-gray-100 hover:border-blue-200 p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 shadow-sm hover:shadow-md text-left relative overflow-hidden">
+          <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="box" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-xs text-gray-400 font-medium uppercase tracking-wider">Satuan Eceran</div>
+            <div class="font-bold text-gray-800 text-lg" id="labelUnitBase">Pcs</div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-blue-600 text-lg" id="priceUnitBase">Rp 0</div>
+          </div>
+        </button>
+        <button id="btnSelectMedium" class="hidden group w-full bg-white hover:bg-purple-50 border-2 border-gray-100 hover:border-purple-200 p-4 rounded-2xl items-center gap-4 transition-all duration-200 shadow-sm hover:shadow-md text-left relative overflow-hidden">
+          <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="layers" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-xs text-gray-400 font-medium uppercase tracking-wider">Satuan Menengah</div>
+            <div class="font-bold text-gray-800 text-lg" id="labelUnitMedium">Pak</div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-purple-600 text-lg" id="priceUnitMedium">Rp 0</div>
+          </div>
+        </button>
+        <button id="btnSelectBig" class="group w-full bg-white hover:bg-orange-50 border-2 border-gray-100 hover:border-orange-200 p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 shadow-sm hover:shadow-md text-left relative overflow-hidden">
+          <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="boxes" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-xs text-gray-400 font-medium uppercase tracking-wider">Satuan Besar</div>
+            <div class="font-bold text-gray-800 text-lg" id="labelUnitBig">Dus</div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-orange-600 text-lg" id="priceUnitBig">Rp 0</div>
+          </div>
+        </button>
+      </div>
+      <button onclick="closeUnitSelection()" class="w-full mt-6 py-3 rounded-xl text-gray-500 font-medium hover:bg-gray-100 hover:text-gray-700 transition-colors">
+        Batal
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INFO SATUAN -->
+<div id="unitInfoModal" class="hidden">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm transition-all" style="z-index: 60;">
+    <div class="bg-white w-96 rounded-2xl shadow-2xl p-6 transform scale-100 relative">
+      <button onclick="closeUnitInfo()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <i data-lucide="book-open" class="w-5 h-5 text-primary"></i> Panduan Isi Satuan
+      </h3>
+
+      <div class="space-y-4 text-sm text-gray-600">
+        <p>Gunakan fitur Multi Satuan untuk produk yang memiliki tingkatan kemasan.</p>
+        
+        <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+          <div class="font-bold text-blue-800 mb-2 text-xs uppercase">Contoh Kasus: Produk Sachet</div>
+          <ul class="space-y-3 text-xs">
+            <li class="flex items-start gap-3">
+              <span class="bg-white w-5 h-5 flex items-center justify-center rounded border border-blue-200 font-mono font-bold text-blue-600 shrink-0">1</span>
+              <div>
+                <span class="font-bold text-gray-800">Satuan Eceran (Dasar)</span><br>
+                Produk yang dijual eceran.<br>
+                Contoh: <span class="font-medium text-blue-700">Pcs/Sachet</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="bg-white w-5 h-5 flex items-center justify-center rounded border border-blue-200 font-mono font-bold text-blue-600 shrink-0">2</span>
+              <div>
+                <span class="font-bold text-gray-800">Satuan Menengah</span><br>
+                Produk yang dijual Pak/Renteng.<br>
+                Isi: <span class="font-medium text-blue-700">10</span> (1 Renteng = 10 Sachet)
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="bg-white w-5 h-5 flex items-center justify-center rounded border border-blue-200 font-mono font-bold text-blue-600 shrink-0">3</span>
+              <div>
+                <span class="font-bold text-gray-800">Satuan Besar</span><br>
+                Produk yang dijual Grosir (Dus/Kartoon).<br>
+                Isi: <span class="font-medium text-blue-700">100</span> (Total Sachet dalam 1 Dus)
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="text-xs bg-orange-50 text-orange-700 p-3 rounded-xl border border-orange-100 flex items-start gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+          <div>
+            <strong>Penting:</strong> Stok di sistem selalu dihitung dalam <u>Satuan Eceran</u>. Saat menjual 1 Dus, stok akan berkurang 100 Sachet.
+          </div>
+        </div>
+      </div>
+
+      <button onclick="closeUnitInfo()" class="w-full mt-6 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition">Mengerti</button>
+    </div>
   </div>
 </div>
 

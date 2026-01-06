@@ -1,9 +1,9 @@
 // Load products from LocalStorage or use default
 let products = JSON.parse(localStorage.getItem('products')) || [
-  { id: 1, name: 'Beras 5kg', price: 65000, capitalPrice: 60000, image: 'beras.jpg', stock: 20, category: 'Sembako' },
-  { id: 2, name: 'Gula 1kg', price: 15000, capitalPrice: 13500, image: 'gula.jpg', stock: 20, category: 'Sembako' },
-  { id: 3, name: 'Minyak Goreng 1L', price: 18000, capitalPrice: 16000, image: 'minyak.jpg', stock: 20, category: 'Sembako' },
-  { id: 4, name: 'Telur Ayam 1kg', price: 28000, capitalPrice: 25000, image: 'telur.jpg', stock: 20, category: 'Sembako' }
+  { id: 1, name: 'Beras Premium', price: 14000, capitalPrice: 12000, image: 'beras.jpg', stock: 100, category: 'Sembako', unit: 'Kg', unitBig: 'Karung 5kg', conversion: 5, priceBig: 65000 },
+  { id: 2, name: 'Gula Pasir', price: 15000, capitalPrice: 13500, image: 'gula.jpg', stock: 50, category: 'Sembako', unit: 'Kg' },
+  { id: 3, name: 'Minyak Goreng', price: 18000, capitalPrice: 16000, image: 'minyak.jpg', stock: 24, category: 'Sembako', unit: 'Liter' },
+  { id: 4, name: 'Telur Ayam', price: 2000, capitalPrice: 1800, image: 'telur.jpg', stock: 300, category: 'Sembako', unit: 'Butir', unitBig: 'Rak', conversion: 30, priceBig: 58000 }
 ]
 
 // Helper to save products
@@ -93,15 +93,22 @@ function renderProducts() {
     
     // Stock Badge
     const stockHtml = p.stock > 0 
-      ? `<span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">Stok: ${p.stock}</span>`
+      ? `<span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">Stok: ${Number(p.stock).toLocaleString('id-ID')}</span>`
       : `<span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded">Habis</span>`
+
+    // Label Satuan
+    const unitLabel = p.unit ? `<span class="text-[10px] text-gray-400">/${p.unit}</span>` : ''
 
     el.innerHTML = `
       ${imgHtml}
       <div class="text-sm font-medium">${p.name}</div>
-      <div class="flex justify-between items-center mt-1"><div class="text-xs text-gray-500">${rupiah(p.price)}</div>${stockHtml}</div>
+      <div class="flex justify-between items-center mt-1"><div class="text-xs text-gray-500">${rupiah(p.price)} ${unitLabel}</div>${stockHtml}</div>
     `
-    if (p.stock > 0) el.onclick = () => addToCart(p)
+    if (p.stock > 0) {
+      // Jika punya satuan besar, buka popup pilihan. Jika tidak, langsung masuk keranjang.
+      if ((p.unitBig && p.conversion > 1) || (p.unitMedium && p.conversionMedium > 1)) el.onclick = () => openUnitSelection(p)
+      else el.onclick = () => addToCart(p)
+    }
     else el.classList.add('opacity-60', 'cursor-not-allowed')
     
     productGrid.appendChild(el)
@@ -109,24 +116,130 @@ function renderProducts() {
   lucide.createIcons()
 }
 
-/* CART */
-function addToCart(product) {
-  const currentQty = cart[product.id] ? cart[product.id].qty : 0
-  if (currentQty >= product.stock) return showAlert('Stok tidak mencukupi!')
+/* UNIT SELECTION MODAL */
+function openUnitSelection(product) {
+  const modal = document.getElementById('unitSelectionModal')
+  document.getElementById('unitSelectProductName').textContent = product.name
   
-  if (!cart[product.id]) cart[product.id] = { ...product, qty: 0, maxStock: product.stock }
-  cart[product.id].qty++
+  // Setup Tombol Eceran
+  const btnBase = document.getElementById('btnSelectBase')
+  document.getElementById('labelUnitBase').textContent = product.unit || 'Pcs'
+  document.getElementById('priceUnitBase').textContent = rupiah(product.price)
+  btnBase.onclick = () => {
+    addToCart(product, 'base')
+    closeUnitSelection()
+  }
+
+  // Setup Tombol Medium
+  const btnMedium = document.getElementById('btnSelectMedium')
+  if (product.unitMedium && product.conversionMedium > 1) {
+    btnMedium.classList.remove('hidden')
+    btnMedium.classList.add('flex')
+    document.getElementById('labelUnitMedium').textContent = product.unitMedium
+    document.getElementById('priceUnitMedium').textContent = rupiah(product.priceMedium || (product.price * product.conversionMedium))
+    btnMedium.onclick = () => {
+      addToCart(product, 'medium')
+      closeUnitSelection()
+    }
+  } else {
+    btnMedium.classList.add('hidden')
+    btnMedium.classList.remove('flex')
+  }
+
+  // Setup Tombol Grosir
+  const btnBig = document.getElementById('btnSelectBig')
+  document.getElementById('labelUnitBig').textContent = product.unitBig || 'Grosir'
+  document.getElementById('priceUnitBig').textContent = rupiah(product.priceBig || product.price * product.conversion)
+
+  btnBig.onclick = () => {
+    addToCart(product, 'big')
+    closeUnitSelection()
+  }
+
+  modal.classList.remove('hidden')
+}
+
+function closeUnitSelection() {
+  document.getElementById('unitSelectionModal').classList.add('hidden')
+}
+
+/* CART */
+function addToCart(product, unitType = 'base') {
+  // Buat ID unik untuk keranjang: "IDProduk-TipeSatuan" (contoh: "1-base" atau "1-big")
+  const cartKey = `${product.id}-${unitType}`
+  
+  // Tentukan harga dan konversi berdasarkan tipe satuan
+  const isBig = unitType === 'big'
+  const isMedium = unitType === 'medium'
+  
+  let price = product.price
+  let conversion = 1
+  let unitName = product.unit || 'Pcs'
+
+  if (isBig) {
+    price = product.priceBig || (product.price * (product.conversion || 1))
+    conversion = product.conversion || 1
+    unitName = product.unitBig || 'Grosir'
+  } else if (isMedium) {
+    price = product.priceMedium || (product.price * (product.conversionMedium || 1))
+    conversion = product.conversionMedium || 1
+    unitName = product.unitMedium || 'Sedang'
+  }
+
+  const displayName = `${product.name} (${unitName})`
+
+  // Cek Stok (Stok di database selalu dalam satuan dasar)
+  const currentCartItem = cart[cartKey]
+  const currentQtyInCart = currentCartItem ? currentCartItem.qty : 0
+  const requiredStock = (currentQtyInCart + 1) * conversion
+  
+  // Kita perlu cek total stok yang terpakai untuk produk ini (gabungan ecer + grosir di keranjang)
+  // Tapi untuk simplifikasi, kita cek per item dulu atau cek global
+  // Cek global stok produk
+  let totalStockUsed = 0
+  Object.values(cart).forEach(item => {
+    if (item.id === product.id) {
+      totalStockUsed += item.qty * (item.conversion || 1)
+    }
+  })
+  
+  if ((totalStockUsed + conversion) > product.stock) return showAlert('Stok tidak mencukupi!')
+  
+  if (!cart[cartKey]) {
+    cart[cartKey] = { 
+      ...product, 
+      cartKey: cartKey, // Simpan key unik
+      name: displayName, // Nama tampilan beda
+      price: price,      // Harga beda
+      qty: 0, 
+      conversion: conversion, // Simpan faktor pengali stok
+      unitType: unitType
+    }
+  }
+  
+  cart[cartKey].qty++
   renderCart()
 }
 
-function updateQty(id, delta) {
+function updateQty(cartKey, delta) {
+  // cartKey sekarang string (misal "1-base"), bukan integer ID
   if (delta > 0) {
-    const item = cart[id]
-    if (item.qty >= item.maxStock) return showAlert('Stok maksimal tercapai!')
+    const item = cart[cartKey]
+    // Cek stok lagi saat tambah qty
+    const product = products.find(p => p.id === item.id)
+    
+    let totalStockUsed = 0
+    Object.values(cart).forEach(c => {
+      if (c.id === item.id) {
+        totalStockUsed += c.qty * (c.conversion || 1)
+      }
+    })
+
+    if ((totalStockUsed + item.conversion) > product.stock) return showAlert('Stok maksimal tercapai!')
   }
   
-  cart[id].qty += delta
-  if (cart[id].qty <= 0) delete cart[id]
+  cart[cartKey].qty += delta
+  if (cart[cartKey].qty <= 0) delete cart[cartKey]
   renderCart()
 }
 
@@ -169,9 +282,9 @@ function renderCart() {
         <div class="text-xs text-gray-500">${rupiah(item.price)}</div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="updateQty(${item.id}, -1)" class="w-7 h-7 bg-gray-200 rounded-full">-</button>
+        <button onclick="updateQty('${item.cartKey}', -1)" class="w-7 h-7 bg-gray-200 rounded-full">-</button>
         <div class="w-7 h-7 bg-white rounded-lg shadow flex items-center justify-center text-sm">${item.qty}</div>
-        <button onclick="updateQty(${item.id}, 1)" class="w-7 h-7 bg-gray-200 rounded-full">+</button>
+        <button onclick="updateQty('${item.cartKey}', 1)" class="w-7 h-7 bg-gray-200 rounded-full">+</button>
       </div>
     `
     cartItems.appendChild(el)
@@ -259,9 +372,12 @@ function openModal() {
 
   Object.values(cart).forEach(item => {
     receiptItems.innerHTML += `
-      <div class="flex justify-between">
-        <span>${item.name} x${item.qty}</span>
-        <span>${rupiah(item.price * item.qty)}</span>
+      <div class="mb-2">
+        <div class="flex justify-between text-gray-800">
+          <span>${item.name}</span>
+          <span>${rupiah(item.price * item.qty)}</span>
+        </div>
+        <div class="text-xs text-gray-800">${item.qty} x ${rupiah(item.price)}</div>
       </div>
     `
   })
@@ -285,9 +401,12 @@ function generateReceiptHTML(data) {
   const methodLabel = data.paymentMethod ? data.paymentMethod.toUpperCase() : 'TUNAI'
   
   const itemsHtml = items.map(item => `
-    <div class="row" style="margin-bottom: 4px;">
-      <span style="flex:1">${item.name} <span style="color:#000;">x${item.qty}</span></span>
-      <span>${rupiah(item.total)}</span>
+    <div style="margin-bottom: 5px;">
+      <div class="row" style="margin-bottom: 2px;">
+        <span style="flex:1;">${item.name}</span>
+        <span>${rupiah(item.total)}</span>
+      </div>
+      <div style="font-size: 9px; color: #000;">${item.qty} x ${rupiah(item.price)}</div>
     </div>
   `).join('')
 
@@ -369,14 +488,17 @@ function processCheckout() {
     name: i.name,
     qty: i.qty,
     price: i.price,
-    capitalPrice: i.capitalPrice || 0, // Simpan harga modal saat transaksi terjadi
+    capitalPrice: (i.capitalPrice || 0) * (i.conversion || 1), // Fix: Modal dikali konversi (isi)
     total: i.price * i.qty
   }))
   
   // Kurangi Stok
   Object.values(cart).forEach(cartItem => {
     const product = products.find(p => p.id === cartItem.id)
-    if (product) product.stock -= cartItem.qty
+    if (product) {
+      // Kurangi stok berdasarkan konversi (misal beli 1 Dus, kurangi 24 stok)
+      product.stock -= (cartItem.qty * (cartItem.conversion || 1))
+    }
   })
   saveProductsData()
   renderProducts() // Refresh grid untuk update tampilan stok
@@ -658,9 +780,12 @@ function showTransactionDetail(id) {
   let itemsHtml = ''
   if (t.itemsDetails) {
     itemsHtml = t.itemsDetails.map(item => `
-      <div class="flex justify-between">
-        <span>${item.name} x${item.qty}</span>
-        <span>${rupiah(item.total)}</span>
+      <div class="mb-2">
+        <div class="flex justify-between text-gray-800">
+          <span>${item.name}</span>
+          <span>${rupiah(item.total)}</span>
+        </div>
+        <div class="text-xs text-gray-800">${item.qty} x ${rupiah(item.price)}</div>
       </div>
     `).join('')
   } else {
@@ -856,7 +981,18 @@ function openProductModal(id = null) {
   const stockInput = document.getElementById('prodStock')
   const capitalPriceInput = document.getElementById('prodCapitalPrice')
   const priceInput = document.getElementById('prodPrice')
+  const unitInput = document.getElementById('prodUnit')
+  const unitBigInput = document.getElementById('prodUnitBig')
+  const conversionInput = document.getElementById('prodConversion')
+  const priceBigInput = document.getElementById('prodPriceBig')
+  const capitalPriceBigInput = document.getElementById('prodCapitalPriceBig')
+  const unitMediumInput = document.getElementById('prodUnitMedium')
+  const conversionMediumInput = document.getElementById('prodConversionMedium')
+  const priceMediumInput = document.getElementById('prodPriceMedium')
+  const capitalPriceMediumInput = document.getElementById('prodCapitalPriceMedium')
   const idInput = document.getElementById('prodId')
+  const wholesaleGroup = document.getElementById('wholesaleInputGroup')
+  const wholesaleChevron = document.getElementById('wholesaleChevron')
 
   modal.classList.remove('hidden')
   
@@ -871,6 +1007,24 @@ function openProductModal(id = null) {
     stockInput.value = p.stock
     capitalPriceInput.value = formatNumber(p.capitalPrice || 0)
     priceInput.value = formatNumber(p.price)
+    unitInput.value = p.unit || 'Pcs'
+    unitBigInput.value = p.unitBig || ''
+    conversionInput.value = p.conversion || ''
+    priceBigInput.value = p.priceBig ? formatNumber(p.priceBig) : ''
+    capitalPriceBigInput.value = (p.capitalPrice && p.conversion) ? formatNumber(p.capitalPrice * p.conversion) : ''
+    unitMediumInput.value = p.unitMedium || ''
+    conversionMediumInput.value = p.conversionMedium || ''
+    priceMediumInput.value = p.priceMedium ? formatNumber(p.priceMedium) : ''
+    capitalPriceMediumInput.value = p.capitalPriceMedium ? formatNumber(p.capitalPriceMedium) : ''
+    
+    // Auto expand jika produk memiliki fitur grosir
+    if (p.unitBig || (p.conversion && p.conversion > 1) || p.unitMedium) {
+      wholesaleGroup.classList.remove('hidden')
+      wholesaleChevron.classList.add('rotate-180')
+    } else {
+      wholesaleGroup.classList.add('hidden')
+      wholesaleChevron.classList.remove('rotate-180')
+    }
   } else {
     // Create Mode
     title.textContent = 'Tambah Produk'
@@ -881,12 +1035,38 @@ function openProductModal(id = null) {
     stockInput.value = ''
     capitalPriceInput.value = ''
     priceInput.value = ''
+    unitInput.value = ''
+    unitBigInput.value = ''
+    conversionInput.value = ''
+    priceBigInput.value = ''
+    capitalPriceBigInput.value = ''
+    unitMediumInput.value = ''
+    conversionMediumInput.value = ''
+    priceMediumInput.value = ''
+    capitalPriceMediumInput.value = ''
+    document.getElementById('wholesalePriceInfo').classList.add('hidden')
+    
+    wholesaleGroup.classList.add('hidden')
+    wholesaleChevron.classList.remove('rotate-180')
   }
   nameInput.focus()
 }
 
 function closeProductModal() {
   document.getElementById('productModal').classList.add('hidden')
+}
+
+function toggleWholesale() {
+  const group = document.getElementById('wholesaleInputGroup')
+  const chevron = document.getElementById('wholesaleChevron')
+  
+  if (group.classList.contains('hidden')) {
+    group.classList.remove('hidden')
+    chevron.classList.add('rotate-180')
+  } else {
+    group.classList.add('hidden')
+    chevron.classList.remove('rotate-180')
+  }
 }
 
 function saveProduct() {
@@ -897,6 +1077,14 @@ function saveProduct() {
   const stock = Number(document.getElementById('prodStock').value)
   const capitalPrice = getNumber(document.getElementById('prodCapitalPrice').value)
   const price = getNumber(document.getElementById('prodPrice').value)
+  const unit = document.getElementById('prodUnit').value
+  const unitBig = document.getElementById('prodUnitBig').value
+  const conversion = Number(document.getElementById('prodConversion').value)
+  const priceBig = getNumber(document.getElementById('prodPriceBig').value)
+  const unitMedium = document.getElementById('prodUnitMedium').value
+  const conversionMedium = Number(document.getElementById('prodConversionMedium').value)
+  const priceMedium = getNumber(document.getElementById('prodPriceMedium').value)
+  const capitalPriceMedium = getNumber(document.getElementById('prodCapitalPriceMedium').value)
 
   if (!name || !price) return showAlert('Mohon lengkapi nama, stok, dan harga')
 
@@ -910,11 +1098,19 @@ function saveProduct() {
       p.stock = stock
       p.capitalPrice = capitalPrice
       p.price = price
+      p.unit = unit
+      p.unitBig = unitBig
+      p.conversion = conversion
+      p.priceBig = priceBig
+      p.unitMedium = unitMedium
+      p.conversionMedium = conversionMedium
+      p.priceMedium = priceMedium
+      p.capitalPriceMedium = capitalPriceMedium
     }
   } else {
     // Create new
     const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1
-    products.push({ id: newId, name, category, price, capitalPrice, image, stock })
+    products.push({ id: newId, name, category, price, capitalPrice, image, stock, unit, unitBig, conversion, priceBig, unitMedium, conversionMedium, priceMedium, capitalPriceMedium })
   }
 
   saveProductsData()
@@ -970,11 +1166,11 @@ function deleteProduct(id) {
       products.splice(idx, 1)
       saveProductsData()
       
-      // Hapus dari keranjang jika ada
-      if (cart[id]) {
-        delete cart[id]
-        renderCart()
-      }
+      // Karena key keranjang sekarang string (misal "1-base"), kita harus loop
+      Object.keys(cart).forEach(key => {
+        if (cart[key].id === id) delete cart[key]
+      })
+      renderCart()
       
       renderProductManagement()
       renderCategories()
@@ -995,6 +1191,10 @@ function setupCurrencyInput(el) {
 setupCurrencyInput(cashInput)
 setupCurrencyInput(document.getElementById('prodPrice'))
 setupCurrencyInput(document.getElementById('prodCapitalPrice'))
+setupCurrencyInput(document.getElementById('prodPriceBig'))
+setupCurrencyInput(document.getElementById('prodCapitalPriceBig'))
+setupCurrencyInput(document.getElementById('prodPriceMedium'))
+setupCurrencyInput(document.getElementById('prodCapitalPriceMedium'))
 setupCurrencyInput(discountInput)
 discountInput.addEventListener('input', updateCartTotals)
 discountType.addEventListener('change', updateCartTotals)
@@ -1005,6 +1205,62 @@ loadSettings()
 renderCategories()
 renderProducts()
 renderCart()
+
+// Logic Sinkronisasi Harga Modal (Eceran <-> Grosir)
+const elCapBase = document.getElementById('prodCapitalPrice')
+const elCapBig = document.getElementById('prodCapitalPriceBig')
+const elConv = document.getElementById('prodConversion')
+
+function syncCapitalPrice(source) {
+  const base = getNumber(elCapBase.value)
+  const big = getNumber(elCapBig.value)
+  const conv = Number(elConv.value) || 1
+
+  if (source === 'base') {
+    // Jika ubah modal eceran -> update modal grosir
+    elCapBig.value = formatNumber(base * conv)
+  } else if (source === 'big') {
+    // Jika ubah modal grosir -> update modal eceran (pembulatan ke atas)
+    if (conv > 0) elCapBase.value = formatNumber(Math.ceil(big / conv))
+  } else if (source === 'conv') {
+    // Jika ubah konversi -> update modal grosir (asumsi modal eceran tetap)
+    elCapBig.value = formatNumber(base * conv)
+  }
+}
+
+elCapBase.addEventListener('input', () => syncCapitalPrice('base'))
+elCapBig.addEventListener('input', () => syncCapitalPrice('big'))
+elConv.addEventListener('input', () => syncCapitalPrice('conv'))
+
+// Logic Info Selisih Harga Jual (Eceran vs Grosir)
+function updateWholesaleInfo() {
+  const price = getNumber(document.getElementById('prodPrice').value)
+  const conv = Number(document.getElementById('prodConversion').value)
+  const priceBig = getNumber(document.getElementById('prodPriceBig').value)
+  const infoEl = document.getElementById('wholesalePriceInfo')
+  
+  if (price > 0 && conv > 1 && priceBig > 0) {
+    const normalTotal = price * conv
+    const diff = normalTotal - priceBig
+    
+    if (diff > 0) {
+      infoEl.innerHTML = `✅ Lebih hemat <b>${rupiah(diff)}</b> dibanding eceran`
+      infoEl.className = 'text-[10px] text-green-600 mt-1'
+      infoEl.classList.remove('hidden')
+    } else if (diff < 0) {
+      infoEl.innerHTML = `⚠️ Lebih mahal <b>${rupiah(Math.abs(diff))}</b> dibanding eceran`
+      infoEl.className = 'text-[10px] text-orange-500 mt-1'
+      infoEl.classList.remove('hidden')
+    } else {
+      infoEl.classList.add('hidden')
+    }
+  } else {
+    infoEl.classList.add('hidden')
+  }
+}
+document.getElementById('prodPrice').addEventListener('input', updateWholesaleInfo)
+document.getElementById('prodConversion').addEventListener('input', updateWholesaleInfo)
+document.getElementById('prodPriceBig').addEventListener('input', updateWholesaleInfo)
 
 /* CUSTOM CONFIRM MODAL */
 let pendingConfirmAction = null
@@ -1063,6 +1319,15 @@ function showAlert(message) {
 
 function closeAlertModal() {
   document.getElementById('alertModal').classList.add('hidden')
+}
+
+/* UNIT INFO MODAL */
+function openUnitInfo() {
+  document.getElementById('unitInfoModal').classList.remove('hidden')
+}
+
+function closeUnitInfo() {
+  document.getElementById('unitInfoModal').classList.add('hidden')
 }
 
 // Inisialisasi ikon Lucide untuk elemen statis (Sidebar, dll)
