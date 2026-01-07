@@ -78,6 +78,7 @@ function renderProducts() {
   productGrid.innerHTML = ''
   const term = searchInput.value.toLowerCase()
 
+  const LOW_STOCK_LIMIT = appSettings.lowStockLimit || 10;
   products.filter(p => {
     const matchName = p.name.toLowerCase().includes(term)
     const matchCat = currentCategory === 'Semua' || (p.category || 'Lainnya') === currentCategory
@@ -85,16 +86,21 @@ function renderProducts() {
   }).forEach(p => {
     const el = document.createElement('div')
     el.className = 'bg-white rounded-2xl shadow-soft p-4 cursor-pointer'
-    
+
     // Cek apakah ada nama file gambar, jika tidak pakai placeholder
     const imgHtml = p.image 
       ? `<img src="assets/images/${p.image}" class="h-28 w-full object-contain bg-gray-50 rounded-xl mb-3" alt="${p.name}">`
       : `<div class="h-28 bg-gray-200 rounded-xl mb-3 flex items-center justify-center"><i data-lucide="image" class="text-gray-400"></i></div>`
-    
-    // Stock Badge
-    const stockHtml = p.stock > 0 
-      ? `<span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">Stok: ${Number(p.stock).toLocaleString('id-ID')}</span>`
-      : `<span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded">Habis</span>`
+
+    // Stock Badge dengan notifikasi stok menipis
+    let stockHtml = '';
+    if (p.stock === 0) {
+      stockHtml = `<span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded">Habis</span>`;
+    } else if (p.stock <= LOW_STOCK_LIMIT) {
+      stockHtml = `<span class="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded animate-pulse">Stok: ${Number(p.stock).toLocaleString('id-ID')} (Menipis)</span>`;
+    } else {
+      stockHtml = `<span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">Stok: ${Number(p.stock).toLocaleString('id-ID')}</span>`;
+    }
 
     // Label Satuan
     const unitLabel = p.unit ? `<span class="text-[10px] text-gray-400">/${p.unit}</span>` : ''
@@ -110,7 +116,7 @@ function renderProducts() {
       else el.onclick = () => addToCart(p)
     }
     else el.classList.add('opacity-60', 'cursor-not-allowed')
-    
+
     productGrid.appendChild(el)
   })
   lucide.createIcons()
@@ -414,10 +420,15 @@ function generateReceiptHTML(data) {
     </div>
   `).join('')
 
-  // Menggunakan logo SVG (Ikon Toko) agar lebih stabil dan tajam saat diprint
-  const logoHtml = `<div style="display: flex; justify-content: center; margin-bottom: 5px;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/></svg>
-  </div>`
+  // Logo struk: jika ada di appSettings, gunakan gambar upload, jika tidak pakai SVG default
+  let logoHtml = '';
+  if (appSettings.receiptLogo) {
+    logoHtml = `<div style="display: flex; justify-content: center; margin-bottom: 5px;"><img src="${appSettings.receiptLogo}" style="max-width:48px;max-height:48px;" /></div>`;
+  } else {
+    logoHtml = `<div style="display: flex; justify-content: center; margin-bottom: 5px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/></svg>
+    </div>`;
+  }
 
   const paperSize = '48mm'
   const fontSize = '10px'
@@ -463,7 +474,7 @@ function generateReceiptHTML(data) {
             ${(data.paymentMethod === 'cash' || !data.paymentMethod) ? `<div class="row"><span>Tunai:</span> <span>${rupiah(data.cash)}</span></div>` : ''}
             ${(data.paymentMethod === 'cash' || !data.paymentMethod) && data.change ? `<div class="row"><span>Kembali:</span> <span>${rupiah(data.change)}</span></div>` : ''}
           </div>
-          <div style="text-align:center; margin-top:20px; font-size:12px;">Terima Kasih!</div>
+          <div style="text-align:center; margin-top:20px; font-size:12px;">${appSettings.receiptFooter || 'Terima Kasih!'}</div>
         </div>
         <script>
           window.onload = function() { window.print(); }
@@ -904,29 +915,107 @@ function exportToExcel() {
 /* SETTINGS */
 let appSettings = {
   storeName: 'Toko Sembako',
-  storeAddress: 'Cabang Utama'
+  storeAddress: 'Cabang Utama',
+  lowStockLimit: 10,
+  receiptHeader: '',
+  receiptFooter: '',
+  receiptLogo: ''
 }
 
 function loadSettings() {
   const saved = localStorage.getItem('appSettings')
-  if (saved) appSettings = JSON.parse(saved)
+  if (saved) appSettings = { ...appSettings, ...JSON.parse(saved) }
   if (document.getElementById('sidebarStoreName')) document.getElementById('sidebarStoreName').textContent = appSettings.storeName
 }
 
 function renderSettings() {
+      // Preview logo struk yang aktif dan ikon hapus
+      const logoPreview = document.getElementById('settingLogoPreview');
+      const btnRemoveLogo = document.getElementById('btnRemoveLogo');
+      const logoInput = document.getElementById('settingReceiptLogo');
+      if (logoPreview) {
+        if (appSettings.receiptLogo) {
+          logoPreview.src = appSettings.receiptLogo;
+          logoPreview.style.display = '';
+          if (btnRemoveLogo) btnRemoveLogo.style.display = '';
+        } else {
+          logoPreview.src = '';
+          logoPreview.style.display = 'none';
+          if (btnRemoveLogo) btnRemoveLogo.style.display = 'none';
+        }
+      }
+      // Preview langsung setelah upload
+      if (logoInput) {
+        logoInput.onchange = function(e) {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+              if (logoPreview) {
+                logoPreview.src = ev.target.result;
+                logoPreview.style.display = '';
+                if (btnRemoveLogo) btnRemoveLogo.style.display = '';
+              }
+            }
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+      // Hapus logo langsung hilang preview
+      if (btnRemoveLogo) {
+        btnRemoveLogo.onclick = function() {
+          appSettings.receiptLogo = '';
+          localStorage.setItem('appSettings', JSON.stringify(appSettings));
+          if (logoPreview) {
+            logoPreview.src = '';
+            logoPreview.style.display = 'none';
+          }
+          if (btnRemoveLogo) btnRemoveLogo.style.display = 'none';
+          if (logoInput) logoInput.value = '';
+          // Tidak perlu popup, preview langsung hilang dan user bisa klik simpan
+        }
+      }
+    // (hapus duplikasi handler)
   document.getElementById('settingStoreName').value = appSettings.storeName
   document.getElementById('settingStoreAddress').value = appSettings.storeAddress
+  if (document.getElementById('settingLowStockLimit')) document.getElementById('settingLowStockLimit').value = appSettings.lowStockLimit || 10
+  if (document.getElementById('settingReceiptHeader')) document.getElementById('settingReceiptHeader').value = appSettings.receiptHeader || ''
+  if (document.getElementById('settingReceiptFooter')) document.getElementById('settingReceiptFooter').value = appSettings.receiptFooter || ''
+  if (document.getElementById('settingReceiptLogo')) document.getElementById('settingReceiptLogo').value = ''
 }
 
 function saveSettings() {
   const name = document.getElementById('settingStoreName').value
   const address = document.getElementById('settingStoreAddress').value
+  const lowStockLimit = parseInt(document.getElementById('settingLowStockLimit').value) || 1
+  // const receiptHeader = document.getElementById('settingReceiptHeader') ? document.getElementById('settingReceiptHeader').value : ''
+  const receiptFooter = document.getElementById('settingReceiptFooter').value
+  const logoInput = document.getElementById('settingReceiptLogo')
   if (!name) return showAlert('Nama toko wajib diisi')
-  
-  appSettings = { storeName: name, storeAddress: address }
-  localStorage.setItem('appSettings', JSON.stringify(appSettings))
-  if (document.getElementById('sidebarStoreName')) document.getElementById('sidebarStoreName').textContent = name
-  showAlert('Pengaturan berhasil disimpan')
+
+  function finishSave(logoData) {
+    appSettings = {
+      storeName: name,
+      storeAddress: address,
+      lowStockLimit,
+      receiptFooter,
+      receiptLogo: logoData !== undefined ? logoData : (appSettings.receiptLogo || '')
+    }
+    localStorage.setItem('appSettings', JSON.stringify(appSettings))
+    if (document.getElementById('sidebarStoreName')) document.getElementById('sidebarStoreName').textContent = name
+    showAlert('Pengaturan berhasil disimpan')
+  }
+
+  // Handle logo upload (base64)
+  if (logoInput && logoInput.files && logoInput.files[0]) {
+    const reader = new FileReader()
+    reader.onload = function(e) {
+      finishSave(e.target.result)
+    }
+    reader.readAsDataURL(logoInput.files[0])
+  } else {
+    finishSave()
+  }
 }
 
 /* PRODUCT MANAGEMENT (CRUD) */
@@ -945,13 +1034,14 @@ function renderProductManagement() {
   else if (sortType === 'price_desc') filtered.sort((a, b) => b.price - a.price)
   else filtered.sort((a, b) => a.id - b.id) // Default by ID
   
+  const LOW_STOCK_LIMIT = appSettings.lowStockLimit || 10;
   filtered.forEach(p => {
     // 3. Indikator Stok
-    let stockDisplay = `<span class="text-gray-600">${p.stock}</span>`
+    let stockDisplay = `<span class="text-gray-600">${p.stock}</span>`;
     if (p.stock === 0) {
-      stockDisplay = `<span class="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-bold">Habis</span>`
-    } else if (p.stock <= 5) {
-      stockDisplay = `<span class="bg-orange-100 text-orange-600 px-2 py-1 rounded-lg text-xs font-bold">${p.stock} (Menipis)</span>`
+      stockDisplay = `<span class="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-bold">Habis</span>`;
+    } else if (p.stock <= LOW_STOCK_LIMIT) {
+      stockDisplay = `<span class="bg-orange-100 text-orange-600 px-2 py-1 rounded-lg text-xs font-bold animate-pulse">${p.stock} (Menipis)</span>`;
     }
 
     const tr = document.createElement('tr')
