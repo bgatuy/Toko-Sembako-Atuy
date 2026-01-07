@@ -148,7 +148,7 @@ function openUnitSelection(product) {
 
   // Setup Tombol Grosir
   const btnBig = document.getElementById('btnSelectBig')
-  document.getElementById('labelUnitBig').textContent = product.unitBig || 'Grosir'
+  document.getElementById('labelUnitBig').textContent = product.unitBig || 'Dus'
   document.getElementById('priceUnitBig').textContent = rupiah(product.priceBig || product.price * product.conversion)
 
   btnBig.onclick = () => {
@@ -181,12 +181,12 @@ function addToCart(product, unitType = 'base') {
     price = product.priceBig || (product.price * (product.conversion || 1))
     capitalPrice = product.capitalPriceBig || (product.capitalPrice * (product.conversion || 1))
     conversion = product.conversion || 1
-    unitName = product.unitBig || 'Grosir'
+    unitName = product.unitBig || 'Dus'
   } else if (isMedium) {
     price = product.priceMedium || (product.price * (product.conversionMedium || 1))
     capitalPrice = product.capitalPriceMedium || (product.capitalPrice * (product.conversionMedium || 1))
     conversion = product.conversionMedium || 1
-    unitName = product.unitMedium || 'Sedang'
+    unitName = product.unitMedium || 'Grosir'
   }
 
   const displayName = `${product.name} (${unitName})`
