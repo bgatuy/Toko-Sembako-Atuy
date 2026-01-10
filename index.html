@@ -423,8 +423,14 @@
             <input id="prodCategory" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Kategori">
           </div>
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">File Gambar</label>
-            <input id="prodImage" class="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="namafile.jpg">
+            <label class="text-sm font-medium text-gray-700 mb-1 block">Foto Produk</label>
+            <input id="prodImage" type="file" accept="image/*" onchange="handleProductImageUpload(this)" class="w-full border border-gray-200 rounded-xl px-2 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
+            <div id="prodImagePreviewContainer" class="mt-3 hidden items-center gap-3">
+              <img id="prodImagePreview" src="" class="h-20 w-20 object-cover rounded-lg border border-gray-200">
+              <button type="button" onclick="removeProductImage()" class="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Hapus Foto">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>

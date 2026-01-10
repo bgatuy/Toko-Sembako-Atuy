@@ -57,8 +57,15 @@ export function renderProducts() {
     const el = document.createElement('div')
     el.className = 'bg-white rounded-2xl shadow-soft p-4 cursor-pointer'
 
-    const imgHtml = p.image 
-      ? `<img src="assets/images/${p.image}" class="h-28 w-full object-contain bg-gray-50 rounded-xl mb-3" alt="${p.name}">`
+    let imgSrc = ''
+    if (p.image) {
+      // Cek apakah gambar adalah Base64 (hasil upload) atau path file biasa (bawaan)
+      if (p.image.startsWith('data:')) imgSrc = p.image
+      else imgSrc = `assets/images/${p.image}`
+    }
+
+    const imgHtml = imgSrc
+      ? `<img src="${imgSrc}" class="h-28 w-full object-contain bg-gray-50 rounded-xl mb-3" alt="${p.name}">`
       : `<div class="h-28 bg-gray-200 rounded-xl mb-3 flex items-center justify-center"><i data-lucide="image" class="text-gray-400"></i></div>`
 
     let stockHtml = '';
@@ -185,6 +192,9 @@ export function openProductModal(id = null) {
   const idInput = document.getElementById('prodId')
   const wholesaleGroup = document.getElementById('wholesaleInputGroup')
   const wholesaleChevron = document.getElementById('wholesaleChevron')
+  const previewContainer = document.getElementById('prodImagePreviewContainer')
+  const previewImg = document.getElementById('prodImagePreview')
+  const imageInput = document.getElementById('prodImage')
 
   modal.classList.remove('hidden')
   
@@ -194,7 +204,7 @@ export function openProductModal(id = null) {
     idInput.value = p.id
     document.getElementById('prodName').value = p.name
     document.getElementById('prodCategory').value = p.category || ''
-    document.getElementById('prodImage').value = p.image || ''
+    imageInput.value = '' // Reset input file
     document.getElementById('prodStock').value = p.stock
     document.getElementById('prodCapitalPrice').value = formatNumber(p.capitalPrice || 0)
     document.getElementById('prodPrice').value = formatNumber(p.price)
@@ -208,6 +218,17 @@ export function openProductModal(id = null) {
     document.getElementById('prodPriceMedium').value = p.priceMedium ? formatNumber(p.priceMedium) : ''
     document.getElementById('prodCapitalPriceMedium').value = p.capitalPriceMedium ? formatNumber(p.capitalPriceMedium) : ''
     
+    // Setup Preview Gambar
+    if (p.image) {
+      previewImg.src = p.image.startsWith('data:') ? p.image : `assets/images/${p.image}`
+      previewContainer.classList.remove('hidden')
+      previewContainer.classList.add('flex')
+    } else {
+      previewImg.src = ''
+      previewContainer.classList.add('hidden')
+      previewContainer.classList.remove('flex')
+    }
+
     if (p.unitBig || (p.conversion && p.conversion > 1) || p.unitMedium) {
       wholesaleGroup.classList.remove('hidden')
       wholesaleChevron.classList.add('rotate-180')
@@ -220,7 +241,7 @@ export function openProductModal(id = null) {
     idInput.value = ''
     document.getElementById('prodName').value = ''
     document.getElementById('prodCategory').value = ''
-    document.getElementById('prodImage').value = ''
+    imageInput.value = ''
     document.getElementById('prodStock').value = ''
     document.getElementById('prodCapitalPrice').value = ''
     document.getElementById('prodPrice').value = ''
@@ -236,6 +257,10 @@ export function openProductModal(id = null) {
     document.getElementById('wholesalePriceInfo').classList.add('hidden')
     document.getElementById('wholesalePriceInfoMedium').classList.add('hidden')
     
+    previewImg.src = ''
+    previewContainer.classList.add('hidden')
+    previewContainer.classList.remove('flex')
+    
     wholesaleGroup.classList.add('hidden')
     wholesaleChevron.classList.remove('rotate-180')
   }
@@ -244,6 +269,27 @@ export function openProductModal(id = null) {
 
 export function closeProductModal() {
   document.getElementById('productModal').classList.add('hidden')
+}
+
+export function handleProductImageUpload(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader()
+    reader.onload = function(e) {
+      document.getElementById('prodImagePreview').src = e.target.result
+      const container = document.getElementById('prodImagePreviewContainer')
+      container.classList.remove('hidden')
+      container.classList.add('flex')
+    }
+    reader.readAsDataURL(input.files[0])
+  }
+}
+
+export function removeProductImage() {
+  document.getElementById('prodImage').value = ''
+  const container = document.getElementById('prodImagePreviewContainer')
+  container.classList.add('hidden')
+  container.classList.remove('flex')
+  document.getElementById('prodImagePreview').src = ''
 }
 
 export function toggleWholesale() {
@@ -263,7 +309,6 @@ export function saveProduct() {
   const id = document.getElementById('prodId').value
   const name = document.getElementById('prodName').value
   const category = document.getElementById('prodCategory').value || 'Lainnya'
-  const image = document.getElementById('prodImage').value
   const stock = Number(document.getElementById('prodStock').value)
   const capitalPrice = getNumber(document.getElementById('prodCapitalPrice').value)
   const price = getNumber(document.getElementById('prodPrice').value)
@@ -278,34 +323,58 @@ export function saveProduct() {
 
   if (!name || !price) return showAlert('Mohon lengkapi nama, stok, dan harga')
 
-  if (id) {
-    const p = products.find(x => x.id == id)
-    if (p) {
-      p.name = name
-      p.category = category
-      p.image = image
-      p.stock = stock
-      p.capitalPrice = capitalPrice
-      p.price = price
-      p.unit = unit
-      p.unitBig = unitBig
-      p.conversion = conversion
-      p.priceBig = priceBig
-      p.unitMedium = unitMedium
-      p.conversionMedium = conversionMedium
-      p.priceMedium = priceMedium
-      p.capitalPriceMedium = capitalPriceMedium
+  // Handle Image Logic
+  const imageInput = document.getElementById('prodImage')
+  const previewContainer = document.getElementById('prodImagePreviewContainer')
+  const file = imageInput.files[0]
+
+  const finishSave = (imageData) => {
+    if (id) {
+      const p = products.find(x => x.id == id)
+      if (p) {
+        p.name = name
+        p.category = category
+        p.image = imageData
+        p.stock = stock
+        p.capitalPrice = capitalPrice
+        p.price = price
+        p.unit = unit
+        p.unitBig = unitBig
+        p.conversion = conversion
+        p.priceBig = priceBig
+        p.unitMedium = unitMedium
+        p.conversionMedium = conversionMedium
+        p.priceMedium = priceMedium
+        p.capitalPriceMedium = capitalPriceMedium
+      }
+    } else {
+      const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1
+      products.push({ id: newId, name, category, price, capitalPrice, image: imageData, stock, unit, unitBig, conversion, priceBig, unitMedium, conversionMedium, priceMedium, capitalPriceMedium })
     }
-  } else {
-    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1
-    products.push({ id: newId, name, category, price, capitalPrice, image, stock, unit, unitBig, conversion, priceBig, unitMedium, conversionMedium, priceMedium, capitalPriceMedium })
+
+    saveProductsData()
+    closeProductModal()
+    renderProductManagement()
+    renderCategories()
+    renderProducts()
   }
 
-  saveProductsData()
-  closeProductModal()
-  renderProductManagement()
-  renderCategories()
-  renderProducts()
+  if (file) {
+    // Jika ada file baru diupload
+    const reader = new FileReader()
+    reader.onload = (e) => finishSave(e.target.result)
+    reader.readAsDataURL(file)
+  } else {
+    // Jika tidak ada file baru
+    let finalImage = ''
+    if (id && !previewContainer.classList.contains('hidden')) {
+      // Jika edit dan preview masih ada, gunakan gambar lama
+      const p = products.find(x => x.id == id)
+      if (p) finalImage = p.image
+    }
+    // Jika preview hidden, berarti gambar dihapus atau memang kosong -> finalImage = ''
+    finishSave(finalImage)
+  }
 }
 
 export function openStockModal(id) {
