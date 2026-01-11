@@ -83,9 +83,18 @@
     <!-- Cart -->
     <aside class="w-96 bg-white rounded-2xl shadow-soft p-4 flex flex-col">
       <div class="flex justify-between items-center mb-4">
-        <div class="font-semibold">Pesanan</div>
-        <div id="cartCount"
-          class="w-6 h-6 bg-primary text-white rounded-full text-xs flex items-center justify-center">0</div>
+        <div class="font-bold text-xl text-gray-800">Pesanan</div>
+        <div class="flex items-center gap-2">
+          <button onclick="showHeldTransactions()" class="relative w-10 h-10 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-all group" title="Daftar Hold">
+            <i data-lucide="folder-clock" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+            <span id="heldCount" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold items-center justify-center rounded-full hidden border-2 border-white shadow-sm">0</span>
+          </button>
+          <button onclick="holdTransaction()" class="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-orange-50 rounded-xl transition-all group" title="Simpan Sementara (Hold)">
+            <i data-lucide="pause-circle" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+          </button>
+          <div class="w-px h-6 bg-gray-200 mx-1"></div>
+          <div id="cartCount" class="w-7 h-7 bg-primary text-white rounded-full text-sm font-bold flex items-center justify-center shadow-sm shadow-primary/30">0</div>
+        </div>
       </div>
 
       <div id="cartItems" class="flex-1 space-y-3 overflow-auto"></div>
@@ -576,7 +585,7 @@
 
 <!-- MODAL KONFIRMASI -->
 <div id="confirmModal" class="hidden z-50">
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm transition-all">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm transition-all" style="z-index: 70;">
   <div class="bg-white w-80 rounded-2xl shadow-2xl p-6 text-center transform scale-100">
     <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
       <i data-lucide="alert-triangle" class="w-6 h-6"></i>
@@ -591,9 +600,22 @@
   </div>
 </div>
 
+<!-- MODAL HELD TRANSACTIONS -->
+<div id="heldTransactionsModal" class="hidden z-50">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm transition-all">
+    <div class="bg-white w-96 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+      <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+        <h3 class="font-bold text-gray-800">Transaksi Disimpan</h3>
+        <button onclick="closeHeldTransactionsModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div id="heldTransactionsList" class="p-4 overflow-y-auto space-y-3 flex-1 bg-gray-50/50"></div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ALERT -->
 <div id="alertModal" class="hidden z-50">
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm transition-all">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm transition-all" style="z-index: 80;">
   <div class="bg-white w-80 rounded-2xl shadow-2xl p-6 text-center transform scale-100">
     <div id="alertIconBg" class="w-12 h-12 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
       <i id="alertIcon" data-lucide="info" class="w-6 h-6"></i>

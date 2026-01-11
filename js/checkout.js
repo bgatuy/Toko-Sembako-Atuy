@@ -3,7 +3,7 @@ import { products, saveProductsData, renderProducts } from './product.js';
 import { transactions } from './transaction.js';
 import { appSettings } from './settings.js';
 import { rupiah, getNumber, formatNumber, showAlert, showConfirm, generateReceiptHTML } from './helpers.js';
-import { saveToStorage } from './storage.js';
+import { getFromStorage, saveToStorage } from './storage.js';
 
 let currentPaymentMethod = 'cash';
 
@@ -180,3 +180,155 @@ export function printReceiptData(data) {
     alert('Pop-up diblokir. Izinkan pop-up untuk mencetak.')
   }
 }
+
+// --- FITUR HOLD TRANSAKSI ---
+
+export function holdTransaction() {
+  if (Object.keys(cart).length === 0) return showAlert('Keranjang kosong');
+  
+  const held = getFromStorage('held_transactions') || [];
+  const newHold = {
+    id: Date.now(),
+    date: new Date().toLocaleString('id-ID'),
+    items: JSON.parse(JSON.stringify(cart)), // Deep copy cart
+    total: getCartCalculations().total
+  };
+  
+  held.push(newHold);
+  saveToStorage('held_transactions', held);
+  
+  // Clear cart
+  Object.keys(cart).forEach(k => delete cart[k]);
+  renderCart();
+  updateHeldBadge();
+  showAlert('Transaksi berhasil disimpan sementara');
+}
+
+export function showHeldTransactions() {
+  const held = getFromStorage('held_transactions') || [];
+  const list = document.getElementById('heldTransactionsList');
+  if (!list) return;
+  
+  list.innerHTML = '';
+  
+  if (held.length === 0) {
+    list.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+          <i data-lucide="folder-open" class="w-8 h-8 text-gray-300"></i>
+        </div>
+        <p class="text-sm font-medium">Tidak ada transaksi tersimpan</p>
+      </div>
+    `;
+  } else {
+    held.forEach(t => {
+      const totalItems = Object.values(t.items).reduce((acc, item) => acc + item.qty, 0);
+      const itemsHtml = Object.values(t.items).map(i => `
+        <div class="flex justify-between items-center py-1 border-b border-dashed border-gray-200 last:border-0">
+          <span class="text-gray-900 truncate pr-2">${i.name}</span>
+          <span class="text-gray-900 shrink-0">x${i.qty}</span>
+        </div>
+      `).join('');
+      
+      const el = document.createElement('div');
+      el.className = 'bg-white border border-gray-200 rounded-xl p-3 hover:border-primary/50 transition-all shadow-sm';
+      
+      el.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+          <div class="flex items-center gap-3">
+            <div class="bg-orange-50 text-orange-600 p-2 rounded-lg shrink-0">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">${rupiah(t.total)}</div>
+              <div class="text-[10px] text-gray-400">${t.date}</div>
+            </div>
+          </div>
+          <div class="flex gap-2">
+             <button onclick="restoreHeldTransaction(${t.id})" class="w-10 h-8 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" title="Pulihkan">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            </button>
+            <button onclick="removeHeldTransaction(${t.id})" class="w-10 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors" title="Hapus">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+          <div class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider border-b border-gray-200 pb-1">${totalItems} Item</div>
+          <div class="text-xs space-y-0.5 max-h-32 overflow-y-auto">
+            ${itemsHtml}
+          </div>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+  }
+  
+  document.getElementById('heldTransactionsModal').classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+export function closeHeldTransactionsModal() {
+  document.getElementById('heldTransactionsModal').classList.add('hidden');
+}
+
+export function restoreHeldTransaction(id) {
+  if (Object.keys(cart).length > 0) {
+    showConfirm('Keranjang saat ini tidak kosong. Timpa dengan transaksi tersimpan?', () => performRestore(id), 'Timpa', 'Batal');
+  } else {
+    performRestore(id);
+  }
+}
+
+function performRestore(id) {
+  const held = getFromStorage('held_transactions') || [];
+  const t = held.find(x => x.id === id);
+  if (!t) return;
+  
+  Object.keys(cart).forEach(k => delete cart[k]); // Clear current
+  Object.assign(cart, t.items); // Restore items
+  
+  const newHeld = held.filter(x => x.id !== id); // Remove from storage
+  saveToStorage('held_transactions', newHeld);
+  
+  renderCart();
+  updateHeldBadge();
+  closeHeldTransactionsModal();
+  showAlert('Transaksi dipulihkan');
+}
+
+export function removeHeldTransaction(id) {
+  showConfirm('Hapus transaksi tersimpan ini?', () => {
+    const held = getFromStorage('held_transactions') || [];
+    const newHeld = held.filter(x => x.id !== id);
+    saveToStorage('held_transactions', newHeld);
+    showHeldTransactions(); // Refresh list
+    updateHeldBadge();
+  });
+}
+
+export function updateHeldBadge() {
+  const held = getFromStorage('held_transactions') || [];
+  const badge = document.getElementById('heldCount');
+  if (badge) {
+    badge.textContent = held.length;
+    if (held.length > 0) {
+      badge.classList.remove('hidden');
+      badge.classList.add('flex');
+    } else {
+      badge.classList.add('hidden');
+      badge.classList.remove('flex');
+    }
+  }
+}
+
+// Expose to window for HTML onclick events
+window.holdTransaction = holdTransaction;
+window.showHeldTransactions = showHeldTransactions;
+window.closeHeldTransactionsModal = closeHeldTransactionsModal;
+window.restoreHeldTransaction = restoreHeldTransaction;
+window.removeHeldTransaction = removeHeldTransaction;
+
+// Init badge on load
+document.addEventListener('DOMContentLoaded', updateHeldBadge);
+setTimeout(updateHeldBadge, 500); // Fallback
