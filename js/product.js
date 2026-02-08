@@ -72,7 +72,7 @@ export function renderProducts() {
     if (p.stock === 0) {
       stockHtml = `<span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded">Habis</span>`;
     } else if (p.stock <= LOW_STOCK_LIMIT) {
-      stockHtml = `<span class="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded animate-pulse">Stok: ${Number(p.stock).toLocaleString('id-ID')} (Menipis)</span>`;
+      stockHtml = `<span class="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded animate-pulse">Stok: ${Number(p.stock).toLocaleString('id-ID')}</span>`;
     } else {
       stockHtml = `<span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">Stok: ${Number(p.stock).toLocaleString('id-ID')}</span>`;
     }
