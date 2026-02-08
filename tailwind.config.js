@@ -1,6 +1,11 @@
+import lineClamp from '@tailwindcss/line-clamp'
+
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./*.html", "./js/**/*.js"],
+  content: [
+    "./*.html",
+    "./js/**/*.js"
+  ],
   theme: {
     extend: {
       colors: {
@@ -12,5 +17,7 @@ export default {
       },
     },
   },
-  plugins: [],
-};
+  plugins: [
+    lineClamp
+  ],
+}

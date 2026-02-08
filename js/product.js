@@ -47,51 +47,89 @@ export function renderProducts() {
 
   productGrid.innerHTML = ''
   const term = searchInput ? searchInput.value.toLowerCase() : ''
+  const LOW_STOCK_LIMIT = appSettings.lowStockLimit || 10
 
-  const LOW_STOCK_LIMIT = appSettings.lowStockLimit || 10;
-  products.filter(p => {
+  products
+  .filter(p => {
     const matchName = p.name.toLowerCase().includes(term)
     const matchCat = currentCategory === 'Semua' || (p.category || 'Lainnya') === currentCategory
     return matchName && matchCat
-  }).forEach(p => {
-    const el = document.createElement('div')
-    el.className = 'bg-white rounded-2xl shadow-soft p-4 cursor-pointer'
+  })
+  .forEach(p => {
 
+    const el = document.createElement('div')
+
+    // ✅ CARD STRUCTURE FIX
+    el.className = `
+    bg-white rounded-xl shadow-soft
+    p-3
+    flex flex-col
+    min-h-[170px] lg:min-h-[180px]
+    cursor-pointer
+    transition hover:shadow-md
+  `
+
+
+    // ---------- IMAGE ----------
     let imgSrc = ''
     if (p.image) {
-      // Cek apakah gambar adalah Base64 (hasil upload) atau path file biasa (bawaan)
-      if (p.image.startsWith('data:')) imgSrc = p.image
-      else imgSrc = `assets/images/${p.image}`
+      imgSrc = p.image.startsWith('data:') ? p.image : `assets/images/${p.image}`
     }
 
     const imgHtml = imgSrc
-      ? `<img src="${imgSrc}" class="h-28 w-full object-contain bg-gray-50 rounded-xl mb-3" alt="${p.name}">`
-      : `<div class="h-28 bg-gray-200 rounded-xl mb-3 flex items-center justify-center"><i data-lucide="image" class="text-gray-400"></i></div>`
+      ? `
+      <div class="h-20 lg:h-24 flex items-center justify-center bg-gray-50 rounded-xl mb-2">
+        <img src="${imgSrc}" class="max-h-full max-w-full object-contain">
+      </div>`
+      : `
+      <div class="h-20 lg:h-24 flex items-center justify-center bg-gray-100 rounded-xl mb-2">
+        <i data-lucide="image" class="text-gray-400"></i>
+      </div>`
 
-    let stockHtml = '';
+    // ---------- STOCK BADGE ----------
+    let stockHtml = ''
     if (p.stock === 0) {
-      stockHtml = `<span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded">Habis</span>`;
+      stockHtml = `<span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full">Habis</span>`
     } else if (p.stock <= LOW_STOCK_LIMIT) {
-      stockHtml = `<span class="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded animate-pulse">Stok: ${Number(p.stock).toLocaleString('id-ID')}</span>`;
+      stockHtml = `<span class="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">Stok ${formatNumber(p.stock)}</span>`
     } else {
-      stockHtml = `<span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">Stok: ${Number(p.stock).toLocaleString('id-ID')}</span>`;
+      stockHtml = `<span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Stok ${formatNumber(p.stock)}</span>`
     }
 
-    const unitLabel = p.unit ? `<span class="text-[10px] text-gray-400">/${p.unit}</span>` : ''
-
+    // ---------- BODY ----------
     el.innerHTML = `
       ${imgHtml}
-      <div class="text-sm font-medium">${p.name}</div>
-      <div class="flex justify-between items-center mt-1"><div class="text-xs text-gray-500">${rupiah(p.price)} ${unitLabel}</div>${stockHtml}</div>
+
+      <div class="flex flex-col flex-grow">
+        
+        <!-- NAME -->
+        <div class="text-xs lg:text-sm font-medium leading-tight line-clamp-2">
+          ${p.name}
+        </div>
+
+        <!-- PUSH FOOTER DOWN -->
+        <div class="mt-auto pt-2 flex items-center justify-between">
+          <div class="font-semibold text-xs lg:text-sm">
+            ${rupiah(p.price)}
+          </div>
+          ${stockHtml}
+        </div>
+
+      </div>
     `
+
     if (p.stock > 0) {
-      if ((p.unitBig && p.conversion > 1) || (p.unitMedium && p.conversionMedium > 1)) el.onclick = () => openUnitSelection(p)
-      else el.onclick = () => addToCart(p)
+      if ((p.unitBig && p.conversion > 1) || (p.unitMedium && p.conversionMedium > 1))
+        el.onclick = () => openUnitSelection(p)
+      else
+        el.onclick = () => addToCart(p)
+    } else {
+      el.classList.add('opacity-60', 'cursor-not-allowed')
     }
-    else el.classList.add('opacity-60', 'cursor-not-allowed')
 
     productGrid.appendChild(el)
   })
+
   if (window.lucide) window.lucide.createIcons()
 }
 
