@@ -1,101 +1,119 @@
 export function rupiah(num) {
-  return 'Rp ' + (Number(num) || 0).toLocaleString('id-ID')
+  return "Rp " + (Number(num) || 0).toLocaleString("id-ID");
 }
 
 export function getNumber(str) {
-  if (typeof str === 'number') return str
-  return Number(str.replace(/\./g, '') || 0)
+  if (typeof str === "number") return str;
+  return Number(str.replace(/\./g, "") || 0);
 }
 
 export function formatNumber(num) {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export function getYMD(timestamp) {
-  const d = new Date(timestamp)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const d = new Date(timestamp);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function setupCurrencyInput(el, callback) {
-  el.addEventListener('input', function() {
-    const val = this.value.replace(/\D/g, '')
-    this.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-    if (callback) callback()
-  })
+  el.addEventListener("input", function () {
+    const val = this.value.replace(/\D/g, "");
+    this.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    if (callback) callback();
+  });
 }
 
 // UI Helpers
 export function showAlert(message) {
-  const modal = document.getElementById('alertModal')
-  const iconBg = document.getElementById('alertIconBg')
-  const icon = document.getElementById('alertIcon')
-  const title = document.getElementById('alertTitle')
-  const msgEl = document.getElementById('alertMessage')
-  
-  msgEl.textContent = message
-  
-  const lowerMsg = message.toLowerCase()
-  if (lowerMsg.includes('berhasil') || lowerMsg.includes('sukses')) {
-    iconBg.className = 'w-12 h-12 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4'
-    icon.setAttribute('data-lucide', 'check-circle')
-    title.textContent = 'Berhasil'
-  } else if (lowerMsg.includes('gagal') || lowerMsg.includes('kurang') || lowerMsg.includes('kosong') || lowerMsg.includes('wajib') || lowerMsg.includes('mohon')) {
-    iconBg.className = 'w-12 h-12 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4'
-    icon.setAttribute('data-lucide', 'alert-circle')
-    title.textContent = 'Perhatian'
+  const modal = document.getElementById("alertModal");
+  const iconBg = document.getElementById("alertIconBg");
+  const icon = document.getElementById("alertIcon");
+  const title = document.getElementById("alertTitle");
+  const msgEl = document.getElementById("alertMessage");
+
+  msgEl.textContent = message;
+
+  const lowerMsg = message.toLowerCase();
+  if (lowerMsg.includes("berhasil") || lowerMsg.includes("sukses")) {
+    iconBg.className =
+      "w-12 h-12 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4";
+    icon.setAttribute("data-lucide", "check-circle");
+    title.textContent = "Berhasil";
+  } else if (
+    lowerMsg.includes("gagal") ||
+    lowerMsg.includes("kurang") ||
+    lowerMsg.includes("kosong") ||
+    lowerMsg.includes("wajib") ||
+    lowerMsg.includes("mohon")
+  ) {
+    iconBg.className =
+      "w-12 h-12 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4";
+    icon.setAttribute("data-lucide", "alert-circle");
+    title.textContent = "Perhatian";
   } else {
-    iconBg.className = 'w-12 h-12 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4'
-    icon.setAttribute('data-lucide', 'info')
-    title.textContent = 'Info'
+    iconBg.className =
+      "w-12 h-12 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4";
+    icon.setAttribute("data-lucide", "info");
+    title.textContent = "Info";
   }
-  
-  if (window.lucide) window.lucide.createIcons()
-  modal.classList.remove('hidden')
+
+  if (window.lucide) window.lucide.createIcons();
+  modal.classList.remove("hidden");
 }
 
 export function closeAlertModal() {
-  document.getElementById('alertModal').classList.add('hidden')
+  document.getElementById("alertModal").classList.add("hidden");
 }
 
-let pendingConfirmAction = null
-export function showConfirm(message, action, yesLabel = 'Ya, Hapus', noLabel = 'Batal') {
-  document.getElementById('confirmMessage').textContent = message
-  document.getElementById('confirmYesBtn').textContent = yesLabel
-  document.getElementById('confirmCancelBtn').textContent = noLabel
-  document.getElementById('confirmModal').classList.remove('hidden')
-  pendingConfirmAction = action
+let pendingConfirmAction = null;
+export function showConfirm(
+  message,
+  action,
+  yesLabel = "Ya, Hapus",
+  noLabel = "Batal",
+) {
+  document.getElementById("confirmMessage").textContent = message;
+  document.getElementById("confirmYesBtn").textContent = yesLabel;
+  document.getElementById("confirmCancelBtn").textContent = noLabel;
+  document.getElementById("confirmModal").classList.remove("hidden");
+  pendingConfirmAction = action;
 }
 
 export function closeConfirmModal() {
-  document.getElementById('confirmModal').classList.add('hidden')
-  pendingConfirmAction = null
+  document.getElementById("confirmModal").classList.add("hidden");
+  pendingConfirmAction = null;
 }
 
 export function confirmAction() {
   try {
-    if (pendingConfirmAction) pendingConfirmAction()
+    if (pendingConfirmAction) pendingConfirmAction();
   } catch (e) {
-    console.error(e)
+    console.error(e);
   }
-  closeConfirmModal()
+  closeConfirmModal();
 }
 
 export function openUnitInfo() {
-  document.getElementById('unitInfoModal').classList.remove('hidden')
+  document.getElementById("unitInfoModal").classList.remove("hidden");
 }
 
 export function closeUnitInfo() {
-  document.getElementById('unitInfoModal').classList.add('hidden')
+  document.getElementById("unitInfoModal").classList.add("hidden");
 }
 
 export function generateReceiptHTML(data, settings) {
-  const items = data.items || []
-  const methodLabel = data.paymentMethod ? data.paymentMethod.toUpperCase() : 'TUNAI'
-  
-  const itemsHtml = items.map(item => `
+  const items = data.items || [];
+  const methodLabel = data.paymentMethod
+    ? data.paymentMethod.toUpperCase()
+    : "TUNAI";
+
+  const itemsHtml = items
+    .map(
+      (item) => `
     <div style="margin-bottom: 5px;">
       <div class="row" style="margin-bottom: 2px;">
         <span style="flex:1;">${item.name}</span>
@@ -103,9 +121,11 @@ export function generateReceiptHTML(data, settings) {
       </div>
       <div style="font-size: 9px; color: #000;">${item.qty} x ${rupiah(item.price)}</div>
     </div>
-  `).join('')
+  `,
+    )
+    .join("");
 
-  let logoHtml = '';
+  let logoHtml = "";
   if (settings.receiptLogo) {
     logoHtml = `<div style="display: flex; justify-content: center; margin-bottom: 5px;"><img src="${settings.receiptLogo}" style="max-width:48px;max-height:48px;" /></div>`;
   } else {
@@ -114,9 +134,9 @@ export function generateReceiptHTML(data, settings) {
     </div>`;
   }
 
-  const paperSize = '48mm'
-  const fontSize = '10px'
-  const padding = '2mm'
+  const paperSize = "48mm";
+  const fontSize = "10px";
+  const padding = "2mm";
 
   return `
     <html>
@@ -155,15 +175,15 @@ export function generateReceiptHTML(data, settings) {
             <div class="row"><span>Diskon:</span> <span>-${rupiah(data.discount)}</span></div>
             <div class="row" style="font-weight:bold;"><span>Total:</span> <span>${rupiah(data.total)}</span></div>
             <div class="row"><span>Metode:</span> <span>${methodLabel}</span></div>
-            ${(data.paymentMethod === 'cash' || !data.paymentMethod) ? `<div class="row"><span>Tunai:</span> <span>${rupiah(data.cash)}</span></div>` : ''}
-            ${(data.paymentMethod === 'cash' || !data.paymentMethod) && data.change ? `<div class="row"><span>Kembali:</span> <span>${rupiah(data.change)}</span></div>` : ''}
+            ${data.paymentMethod === "cash" || !data.paymentMethod ? `<div class="row"><span>Tunai:</span> <span>${rupiah(data.cash)}</span></div>` : ""}
+            ${(data.paymentMethod === "cash" || !data.paymentMethod) && data.change ? `<div class="row"><span>Kembali:</span> <span>${rupiah(data.change)}</span></div>` : ""}
           </div>
-          <div style="text-align:center; margin-top:20px; font-size:12px;">${settings.receiptFooter || 'Terima Kasih!'}</div>
+          <div style="text-align:center; margin-top:20px; font-size:12px;">${settings.receiptFooter || "Terima Kasih!"}</div>
         </div>
         <script>
           window.onload = function() { window.print(); }
         <\/script>
       </body>
     </html>
-  `
+  `;
 }
